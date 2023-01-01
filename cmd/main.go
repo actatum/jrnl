@@ -2,17 +2,23 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"time"
 
+	"github.com/actatum/jrnl"
 	"github.com/charmbracelet/bubbles/key"
-
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var docStyle = lipgloss.NewStyle().Margin(1, 2)
+var (
+	docStyle           = lipgloss.NewStyle().Margin(1, 2)
+	statusMessageStyle = lipgloss.NewStyle().
+				Foreground(lipgloss.AdaptiveColor{Light: "#04B575", Dark: "#04B575"}).
+				Render
+)
 
 const layoutUS = "2006-01-02"
 
@@ -100,7 +106,36 @@ func (e entry) View() string {
 func newItemDelegate(keys *delegateKeyMap) list.DefaultDelegate {
 	d := list.NewDefaultDelegate()
 
-	d.UpdateFunc = func(msg tea.Msg, model *list.Model) tea.Cmd {
+	d.UpdateFunc = func(msg tea.Msg, m *list.Model) tea.Cmd {
+		var title string
+
+		i, ok := m.SelectedItem().(entry)
+		if ok {
+			title = i.Title()
+		} else {
+			return nil
+		}
+
+		switch msg := msg.(type) {
+		case tea.KeyMsg:
+			switch {
+			case key.Matches(msg, keys.choose):
+				fmt.Println("HELLO WORLD")
+				i.View()
+				_, cmd := i.Update(msg)
+				return cmd
+				//return m.NewStatusMessage(statusMessageStyle("You chose " + title))
+
+			case key.Matches(msg, keys.remove):
+				index := m.Index()
+				m.RemoveItem(index)
+				if len(m.Items()) == 0 {
+					keys.remove.SetEnabled(false)
+				}
+				return m.NewStatusMessage(statusMessageStyle("Deleted " + title))
+			}
+		}
+
 		return nil
 	}
 
@@ -152,6 +187,36 @@ func (d delegateKeyMap) FullHelp() [][]key.Binding {
 }
 
 func main() {
+	f, err := os.CreateTemp("", "")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer func() {
+		f.Close()
+		os.Remove(f.Name())
+	}()
+	jl, err := jrnl.NewJournal(f.Name())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = jl.CreateEntry("heres some content")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	_, err = jl.CreateEntry("second post")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	entries, err := jl.ListEntries()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	fmt.Println(entries)
+
 	delegate := newItemDelegate(newDelegateKeyMap())
 	j := journal{entries: list.New([]list.Item{
 		entry{
@@ -161,7 +226,7 @@ func main() {
 			CreateTime: time.Time{},
 		},
 		entry{
-			title:      time.Now().Add(-2 * time.Minute).Format(layoutUS),
+			title:      time.Now().Add(-24 * time.Hour).Format(layoutUS),
 			desc:       "123",
 			Content:    "howdy",
 			CreateTime: time.Time{},
