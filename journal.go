@@ -3,6 +3,7 @@ package jrnl
 import (
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"time"
@@ -17,19 +18,21 @@ const (
 	passwordKey        = "pw"
 )
 
-// Entry ...
+// Entry is an individual journal entry.
 type Entry struct {
 	ID         int
 	Content    string
 	CreateTime time.Time
+	UpdateTime time.Time
 }
 
 // Journal manages persisting journal entries.
 type Journal struct {
-	db *bolt.DB
+	db             *bolt.DB
+	hashedPassword string
 }
 
-// NewJournal returns a new instance of [Journal].
+// NewJournal returns a new instance of Journal.
 func NewJournal(dbPath string) (*Journal, error) {
 	db, err := bolt.Open(dbPath, 0666, &bolt.Options{Timeout: 2 * time.Second})
 	if err != nil {
@@ -70,9 +73,11 @@ func (j *Journal) Close() error {
 
 // CreateEntry stores a new entry in the journal.
 func (j *Journal) CreateEntry(content string) (Entry, error) {
+	now := time.Now()
 	e := Entry{
 		Content:    content,
-		CreateTime: time.Now(),
+		CreateTime: now,
+		UpdateTime: now,
 	}
 
 	err := j.db.Update(func(tx *bolt.Tx) error {
@@ -89,7 +94,50 @@ func (j *Journal) CreateEntry(content string) (Entry, error) {
 			return err
 		}
 
-		encrypted, err := encrypt(buf, hashPassword(""))
+		encrypted, err := encrypt([]byte(j.hashedPassword), buf)
+		if err != nil {
+			return err
+		}
+
+		return b.Put(itob(e.ID), encrypted)
+	})
+	if err != nil {
+		return Entry{}, nil
+	}
+
+	return e, nil
+}
+
+// EditEntry edits an existing entry
+func (j *Journal) EditEntry(id int, content string) (Entry, error) {
+	e := Entry{
+		ID:         id,
+		Content:    content,
+		UpdateTime: time.Now(),
+	}
+
+	err := j.db.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(journalBucketName))
+
+		data := b.Get(itob(id))
+		decrypted, err := decrypt([]byte(j.hashedPassword), data)
+		if err != nil {
+			return err
+		}
+
+		var currentEntry Entry
+		if err = json.Unmarshal(decrypted, &currentEntry); err != nil {
+			return err
+		}
+
+		e.CreateTime = currentEntry.CreateTime
+
+		buf, err := json.Marshal(e)
+		if err != nil {
+			return err
+		}
+
+		encrypted, err := encrypt([]byte(j.hashedPassword), buf)
 		if err != nil {
 			return err
 		}
@@ -111,9 +159,7 @@ func (j *Journal) ListEntries() ([]Entry, error) {
 		b := tx.Bucket([]byte(journalBucketName))
 
 		err := b.ForEach(func(k, v []byte) error {
-			fmt.Printf("key=%s, value=%s\n", k, v)
-
-			decrypted, err := decrypt(v, hashPassword(""))
+			decrypted, err := decrypt([]byte(j.hashedPassword), v)
 			if err != nil {
 				return err
 			}
@@ -171,7 +217,18 @@ func (j *Journal) Auth(password string) error {
 		b := tx.Bucket([]byte(passwordBucketName))
 		hash := b.Get([]byte(passwordKey))
 
-		return bcrypt.CompareHashAndPassword(hash, []byte(password))
+		if err := bcrypt.CompareHashAndPassword(hash, []byte(password)); err != nil {
+			switch {
+			case errors.Is(err, bcrypt.ErrMismatchedHashAndPassword):
+				return fmt.Errorf("incorrect password")
+			}
+			return err
+		}
+
+		j.hashedPassword = hashPassword(password)
+		fmt.Println(j.hashedPassword)
+
+		return nil
 	})
 }
 

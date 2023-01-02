@@ -6,44 +6,48 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"encoding/hex"
-	"fmt"
-	"io"
 )
 
-func encrypt(data []byte, secret string) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(secret))
+func encrypt(key, data []byte) ([]byte, error) {
+	blockCipher, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
-	ciphertext := make([]byte, aes.BlockSize+len(data))
-	iv := ciphertext[:aes.BlockSize]
-	if _, err = io.ReadFull(rand.Reader, iv); err != nil {
+
+	gcm, err := cipher.NewGCM(blockCipher)
+	if err != nil {
 		return nil, err
 	}
 
-	stream := cipher.NewCFBEncrypter(block, iv)
-	stream.XORKeyStream(ciphertext[aes.BlockSize:], data)
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err = rand.Read(nonce); err != nil {
+		return nil, err
+	}
+
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
 
 	return ciphertext, nil
 }
 
-func decrypt(ciphertext []byte, secret string) ([]byte, error) {
-	block, err := aes.NewCipher([]byte(secret))
+func decrypt(key, data []byte) ([]byte, error) {
+	blockCipher, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
 
-	if len(ciphertext) < aes.BlockSize {
-		return nil, fmt.Errorf("ciphertext too short")
+	gcm, err := cipher.NewGCM(blockCipher)
+	if err != nil {
+		return nil, err
 	}
 
-	iv := ciphertext[:aes.BlockSize]
-	ciphertext = ciphertext[aes.BlockSize:]
+	nonce, ciphertext := data[:gcm.NonceSize()], data[gcm.NonceSize():]
 
-	stream := cipher.NewCFBDecrypter(block, iv)
-	stream.XORKeyStream(ciphertext, ciphertext)
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return ciphertext, nil
+	return plaintext, nil
 }
 
 func hashPassword(password string) string {
