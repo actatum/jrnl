@@ -37,7 +37,12 @@ func Run() error {
 	if err != nil {
 		return err
 	}
-	defer jr.Close()
+	defer func(jr *jrnl.Journal) {
+		err := jr.Close()
+		if err != nil {
+			log.Printf("error closing journal: %v\n", err)
+		}
+	}(jr)
 
 	initialized, err := jr.IsInitialized()
 	if err != nil {
@@ -117,13 +122,4 @@ Sed ante dolor, pulvinar vitae mi sit amet, tempus pretium magna. `)
 	}
 
 	return nil
-}
-
-func fileExists(path string) bool {
-	info, err := os.Stat(path)
-	if os.IsNotExist(err) {
-		return false
-	}
-
-	return !info.IsDir()
 }

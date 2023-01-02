@@ -47,8 +47,6 @@ type EntryUI struct {
 
 // InitEntryUI ...
 func InitEntryUI(e entryItem, jr *jrnl.Journal) (tea.Model, error) {
-	// top, right, bottom, left := DocStyle.GetMargin()
-
 	renderer, err := glamour.NewTermRenderer(
 		glamour.WithAutoStyle(),
 		glamour.WithWordWrap(WindowSize.Width-5),
@@ -84,12 +82,19 @@ func (ui EntryUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, Keymap.Quit):
 			return ui, tea.Quit
+		case key.Matches(msg, Keymap.Back):
+			m, err := InitJournalUI(ui.jr)
+			if err != nil {
+				return ui, func() tea.Msg { return errMsg{err} }
+			}
+			return m, tea.Batch(cmds...)
 		}
 	case tea.WindowSizeMsg:
 		WindowSize = msg
 		headerHeight := lipgloss.Height(ui.headerView())
 		footerHeight := lipgloss.Height(ui.footerView())
-		verticalMarginHeight := headerHeight + footerHeight
+		helpHeight := lipgloss.Height(ui.helpView())
+		verticalMarginHeight := headerHeight + footerHeight + helpHeight
 
 		if !ui.ready {
 			// Since this program is using the full size of the viewport we
@@ -154,7 +159,7 @@ func (ui EntryUI) View() string {
 		return ""
 	}
 
-	return fmt.Sprintf("%s\n%s\n%s", ui.headerView(), ui.viewport.View(), ui.footerView())
+	return fmt.Sprintf("%s\n%s\n%s\n%s", ui.headerView(), ui.viewport.View(), ui.footerView(), ui.helpView())
 }
 
 func (ui EntryUI) headerView() string {
@@ -167,6 +172,11 @@ func (ui EntryUI) footerView() string {
 	info := infoStyle.Render(fmt.Sprintf("%3.f%%", ui.viewport.ScrollPercent()*100))
 	line := strings.Repeat("─", max(0, ui.viewport.Width-lipgloss.Width(info)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, line, info)
+}
+
+func (ui EntryUI) helpView() string {
+	// TODO: use the keymaps to populate the help string
+	return HelpStyle("\n ↑/↓: scroll • e: edit • esc: back • q: quit\n")
 }
 
 func max(a, b int) int {
