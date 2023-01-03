@@ -1,6 +1,7 @@
 package tui
 
 import (
+	"fmt"
 	"log"
 	"strings"
 	"time"
@@ -11,8 +12,6 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 )
-
-const layoutUS = "2006-01-02"
 
 // SelectMsg the message to change the view to the selected entry.
 type SelectMsg struct {
@@ -122,7 +121,12 @@ func (ui JournalUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case key.Matches(msg, Keymap.Create):
 				return InitEditorUI(entryItem{}, ui.jr, true), tea.Batch(cmds...)
 			case key.Matches(msg, Keymap.Enter):
-				activeEntry := ui.entryList.SelectedItem().(entryItem)
+				activeEntry, ok := ui.entryList.SelectedItem().(entryItem)
+				if !ok {
+					return ui, func() tea.Msg {
+						return errMsg{fmt.Errorf("failed type assertion on entryList item")}
+					}
+				}
 				entry, err := InitEntryUI(activeEntry, ui.jr)
 				if err != nil {
 					return ui, func() tea.Msg { return errMsg{err} }

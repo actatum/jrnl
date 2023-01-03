@@ -77,6 +77,7 @@ func (ui EntryUI) Init() tea.Cmd {
 	return nil
 }
 
+// Update ...
 func (ui EntryUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd  tea.Cmd

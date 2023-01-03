@@ -1,3 +1,4 @@
+// Package main provides the entrypoint to the TUI journal.
 package main
 
 import (

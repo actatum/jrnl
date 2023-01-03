@@ -1,3 +1,4 @@
+// Package tui provides types and functions for running the terminal ui that interacts with the journal.
 package tui
 
 import (
@@ -20,7 +21,8 @@ func Run() error {
 		return err
 	}
 
-	if f, err := tea.LogToFile(basePath+"/debug.log", ""); err != nil {
+	var f *os.File
+	if f, err = tea.LogToFile(basePath+"/debug.log", ""); err != nil {
 		fmt.Println("Couldn't open a file for logging:", err)
 		os.Exit(1)
 	} else {
@@ -38,7 +40,7 @@ func Run() error {
 		return err
 	}
 	defer func(jr *jrnl.Journal) {
-		err := jr.Close()
+		err = jr.Close()
 		if err != nil {
 			log.Printf("error closing journal: %v\n", err)
 		}
@@ -58,12 +60,12 @@ func Run() error {
 		}
 	} else {
 		// create password prompt
-		pw, err := CreatePasswordPrompt()
+		var pw string
+		pw, err = CreatePasswordPrompt()
 		if err != nil {
 			return err
 		}
 
-		fmt.Println("pw = ", pw)
 		err = jr.CreatePassword(pw)
 		if err != nil {
 			return err

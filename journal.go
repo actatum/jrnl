@@ -1,3 +1,4 @@
+// Package jrnl provides core functionality for creating, encrypting and reading journal entries.
 package jrnl
 
 import (
@@ -102,7 +103,7 @@ func (j *Journal) CreateEntry(content string) (Entry, error) {
 		return b.Put(itob(e.ID), encrypted)
 	})
 	if err != nil {
-		return Entry{}, nil
+		return Entry{}, err
 	}
 
 	return e, nil
