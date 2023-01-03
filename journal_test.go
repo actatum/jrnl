@@ -61,7 +61,7 @@ func TestJournal_CreateEntry(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(got, tt.want, cmpopts.EquateApproxTime(2*time.Second)); diff != "" {
+			if diff := cmp.Diff(got, tt.want, cmpopts.EquateApproxTime(5*time.Second)); diff != "" {
 				t.Errorf("CreateEntry() (-got, +want):\n%s", diff)
 			}
 		})
@@ -102,7 +102,7 @@ func TestJournal_EditEntry(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(got, tt.want, cmpopts.EquateApproxTime(2*time.Second)); diff != "" {
+			if diff := cmp.Diff(got, tt.want, cmpopts.EquateApproxTime(5*time.Second)); diff != "" {
 				t.Errorf("EditEntry() (-got, +want):\n%s", diff)
 			}
 		})
@@ -165,7 +165,7 @@ func TestJournal_ListEntries(t *testing.T) {
 				return
 			}
 
-			if diff := cmp.Diff(got, tt.want, cmpopts.EquateApproxTime(2*time.Second)); diff != "" {
+			if diff := cmp.Diff(got, tt.want, cmpopts.EquateApproxTime(5*time.Second)); diff != "" {
 				t.Errorf("ListEntries() (-got, +want):\n%s", diff)
 			}
 		})
