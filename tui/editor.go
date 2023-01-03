@@ -59,6 +59,12 @@ func (ui EditorUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ui, func() tea.Msg { return errMsg{err} }
 		}
 		return m, tea.Batch(cmds...)
+	case editEntryMsg:
+		m, err := InitEntryUI(msg.entry, ui.jr)
+		if err != nil {
+			return ui, func() tea.Msg { return errMsg{err} }
+		}
+		return m, tea.Batch(cmds...)
 	case tea.KeyMsg:
 		switch {
 		case key.Matches(msg, Keymap.Back):
@@ -75,14 +81,9 @@ func (ui EditorUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			} else {
 				cmds = append(cmds, editEntryCmd(ui.updatedEntry, ui.jr))
 			}
-			m, err := InitEntryUI(ui.updatedEntry, ui.jr)
-			if err != nil {
-				return ui, func() tea.Msg { return errMsg{err} }
-			}
-			return m, tea.Batch(cmds...)
 		default:
-			ui.updatedEntry.Content = ui.textarea.Value()
 			ui.textarea, cmd = ui.textarea.Update(msg)
+			ui.updatedEntry.Content = ui.textarea.Value()
 			cmds = append(cmds, cmd)
 			if !ui.textarea.Focused() {
 				cmd = ui.textarea.Focus()
@@ -94,12 +95,9 @@ func (ui EditorUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		ui.textarea.SetWidth(msg.Width)
 		ui.textarea.SetHeight(msg.Height - ui.verticalMarginHeight())
 	case errMsg:
-		log.Println(msg.Error())
+		log.Printf("ERROR: %s", msg.Error())
 	}
 
-	//ui.textarea, cmd = ui.textarea.Update(msg)
-	//ui.updatedEntry.Content = ui.textarea.Value()
-	//cmds = append(cmds, cmd)
 	return ui, tea.Batch(cmds...)
 }
 

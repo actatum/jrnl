@@ -10,6 +10,9 @@ type updateEntryListMsg struct{}
 type createEntryMsg struct {
 	entry entryItem
 }
+type editEntryMsg struct {
+	entry entryItem
+}
 
 func deleteEntryCmd(id int, jr *jrnl.Journal) tea.Cmd {
 	return func() tea.Msg {
@@ -23,12 +26,14 @@ func deleteEntryCmd(id int, jr *jrnl.Journal) tea.Cmd {
 
 func editEntryCmd(e entryItem, jr *jrnl.Journal) tea.Cmd {
 	return func() tea.Msg {
-		_, err := jr.EditEntry(e.ID, e.Content)
+		entry, err := jr.EditEntry(e.ID, e.Content)
 		if err != nil {
 			return errMsg{err}
 		}
 
-		return nil
+		return editEntryMsg{
+			entry: entryItem(entry),
+		}
 	}
 }
 
