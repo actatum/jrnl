@@ -62,6 +62,13 @@ func InitEntryUI(e entryItem, jr *jrnl.Journal) (tea.Model, error) {
 		renderer: renderer,
 	}
 
+	ui.viewport = viewport.New(WindowSize.Width, WindowSize.Height-ui.verticalMarginHeight())
+	str, err := renderer.Render(e.Content)
+	if err != nil {
+		return ui, err
+	}
+	ui.viewport.SetContent(str)
+
 	return ui, nil
 }
 
@@ -70,7 +77,6 @@ func (ui EntryUI) Init() tea.Cmd {
 	return nil
 }
 
-// Update ...
 func (ui EntryUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	var (
 		cmd  tea.Cmd
@@ -88,13 +94,13 @@ func (ui EntryUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return ui, func() tea.Msg { return errMsg{err} }
 			}
 			return m, tea.Batch(cmds...)
+		case key.Matches(msg, Keymap.Edit):
+			m := InitEditorUI(ui.entry, ui.jr, false)
+			return m, tea.Batch(cmds...)
 		}
 	case tea.WindowSizeMsg:
 		WindowSize = msg
 		headerHeight := lipgloss.Height(ui.headerView())
-		footerHeight := lipgloss.Height(ui.footerView())
-		helpHeight := lipgloss.Height(ui.helpView())
-		verticalMarginHeight := headerHeight + footerHeight + helpHeight
 
 		if !ui.ready {
 			// Since this program is using the full size of the viewport we
@@ -111,7 +117,7 @@ func (ui EntryUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if err != nil {
 				return ui, func() tea.Msg { return errMsg{err} }
 			}
-			ui.viewport = viewport.New(msg.Width, msg.Height-verticalMarginHeight)
+			ui.viewport = viewport.New(msg.Width, msg.Height-ui.verticalMarginHeight())
 			ui.viewport.YPosition = headerHeight
 			ui.viewport.HighPerformanceRendering = useHighPerformanceRenderer
 			str, err := ui.renderer.Render(ui.entry.Content)
@@ -142,7 +148,7 @@ func (ui EntryUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			ui.viewport.SetContent(str)
 			ui.viewport.Width = msg.Width
-			ui.viewport.Height = msg.Height - verticalMarginHeight
+			ui.viewport.Height = msg.Height - ui.verticalMarginHeight()
 		}
 	}
 
@@ -176,7 +182,14 @@ func (ui EntryUI) footerView() string {
 
 func (ui EntryUI) helpView() string {
 	// TODO: use the keymaps to populate the help string
-	return HelpStyle("\n ↑/↓: scroll • e: edit • esc: back • q: quit\n")
+	return HelpStyle("\n • ↑/k up • ↓/j down • e edit • esc back • q quit\n")
+}
+
+func (ui EntryUI) verticalMarginHeight() int {
+	headerHeight := lipgloss.Height(ui.headerView())
+	footerHeight := lipgloss.Height(ui.footerView())
+	helpHeight := lipgloss.Height(ui.helpView())
+	return headerHeight + footerHeight + helpHeight
 }
 
 func max(a, b int) int {

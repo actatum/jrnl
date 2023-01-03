@@ -226,7 +226,6 @@ func (j *Journal) Auth(password string) error {
 		}
 
 		j.hashedPassword = hashPassword(password)
-		fmt.Println(j.hashedPassword)
 
 		return nil
 	})

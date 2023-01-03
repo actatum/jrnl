@@ -117,7 +117,7 @@ Sed ante dolor, pulvinar vitae mi sit amet, tempus pretium magna. `)
 		return err
 	}
 
-	if _, err = tea.NewProgram(m, tea.WithAltScreen()).Run(); err != nil {
+	if _, err = tea.NewProgram(m, tea.WithAltScreen(), tea.WithMouseCellMotion()).Run(); err != nil {
 		return err
 	}
 

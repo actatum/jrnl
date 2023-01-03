@@ -1,7 +1,7 @@
 package tui
 
 import (
-	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -59,10 +59,11 @@ func InitJournalUI(jr *jrnl.Journal) (tea.Model, error) {
 	ui.entryList.AdditionalShortHelpKeys = func() []key.Binding {
 		return []key.Binding{
 			Keymap.Create,
-			Keymap.Edit,
 			Keymap.Delete,
 		}
 	}
+	top, right, bottom, left := DocStyle.GetMargin()
+	ui.entryList.SetSize(WindowSize.Width-left-right, WindowSize.Height-top-bottom-1)
 
 	return ui, nil
 }
@@ -90,6 +91,8 @@ func (ui JournalUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		items := entriesToItems(entries)
 		ui.entryList.SetItems(items)
 		ui.mode = nav
+	case errMsg:
+		log.Printf("ERROR: %s\n", msg.Error())
 	case tea.KeyMsg:
 		if ui.input.Focused() {
 			switch {
@@ -117,9 +120,7 @@ func (ui JournalUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				ui.quitting = true
 				return ui, tea.Quit
 			case key.Matches(msg, Keymap.Create):
-				ui.mode = create
-				ui.input.Focus()
-				cmd = textinput.Blink
+				return InitEditorUI(entryItem{}, ui.jr, true), tea.Batch(cmds...)
 			case key.Matches(msg, Keymap.Enter):
 				activeEntry := ui.entryList.SelectedItem().(entryItem)
 				entry, err := InitEntryUI(activeEntry, ui.jr)
@@ -188,5 +189,5 @@ type entryItem struct {
 }
 
 func (i entryItem) Title() string       { return i.CreateTime.Format(time.RFC822) }
-func (i entryItem) Description() string { return fmt.Sprintf("%s", i.Content) }
+func (i entryItem) Description() string { return i.Content }
 func (i entryItem) FilterValue() string { return i.CreateTime.Format(time.RFC822) }

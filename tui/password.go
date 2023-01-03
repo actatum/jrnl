@@ -9,11 +9,11 @@ import (
 // CreatePasswordPrompt prompts the user to create a new password for their journal.
 func CreatePasswordPrompt() (string, error) {
 	var pw string
-	fmt.Println("Create a password for your journal")
+	fmt.Println("Create a password for your journal...")
 	scanner := bufio.NewScanner(os.Stdin)
 	scanner.Scan()
 	pw = scanner.Text()
-	fmt.Println("Re-enter your password")
+	fmt.Println("Re-enter your password...")
 	var reentry string
 	scanner.Scan()
 	reentry = scanner.Text()

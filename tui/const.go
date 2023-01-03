@@ -28,12 +28,14 @@ var ErrStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("#bd534b")).Render
 var AlertStyle = lipgloss.NewStyle().Foreground(lipgloss.Color("62")).Render
 
 type keymap struct {
-	Create key.Binding
-	Enter  key.Binding
-	Edit   key.Binding
-	Delete key.Binding
-	Back   key.Binding
-	Quit   key.Binding
+	Create    key.Binding
+	Enter     key.Binding
+	Edit      key.Binding
+	Delete    key.Binding
+	Back      key.Binding
+	Quit      key.Binding
+	ForceQuit key.Binding
+	Save      key.Binding
 }
 
 // Keymap reusable key mappings shared across models
@@ -61,6 +63,14 @@ var Keymap = keymap{
 	Quit: key.NewBinding(
 		key.WithKeys("ctrl+c", "q"),
 		key.WithHelp("ctrl+c/q", "quit"),
+	),
+	ForceQuit: key.NewBinding(
+		key.WithKeys("ctrl+c"),
+		key.WithHelp("ctrl+c", "force quit"),
+	),
+	Save: key.NewBinding(
+		key.WithKeys("ctrl+s"),
+		key.WithHelp("ctrl+s", "save contents"),
 	),
 }
 
