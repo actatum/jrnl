@@ -8,6 +8,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const journalTimeLayout = "Mon, 02 Jan 2006 3:04PM MST"
+
 var (
 	// WindowSize store the size of the terminal window
 	WindowSize tea.WindowSizeMsg

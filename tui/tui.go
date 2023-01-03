@@ -51,16 +51,15 @@ func Run() error {
 		return err
 	}
 
+	var pw string
 	if initialized {
 		// enter password prompt
-		pw := EnterPasswordPrompt()
-		err = jr.Auth(pw)
+		pw, err = EnterPasswordPrompt()
 		if err != nil {
 			return err
 		}
 	} else {
 		// create password prompt
-		var pw string
 		pw, err = CreatePasswordPrompt()
 		if err != nil {
 			return err
@@ -70,6 +69,11 @@ func Run() error {
 		if err != nil {
 			return err
 		}
+	}
+
+	err = jr.Auth(pw)
+	if err != nil {
+		return err
 	}
 
 	m, err := InitJournalUI(jr)

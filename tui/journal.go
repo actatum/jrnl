@@ -18,17 +18,8 @@ type SelectMsg struct {
 	EntryID int
 }
 
-type mode int
-
-const (
-	nav mode = iota
-	edit
-	create
-)
-
 // JournalUI implements tea.Model.
 type JournalUI struct {
-	mode      mode
 	entryList list.Model
 	input     textinput.Model
 	quitting  bool
@@ -47,11 +38,9 @@ func InitJournalUI(jr *jrnl.Journal) (tea.Model, error) {
 		return nil, err
 	}
 
-	ui := JournalUI{
-		mode:      nav,
-		entryList: list.New(items, list.NewDefaultDelegate(), 0, 0),
-		input:     input,
-		jr:        jr,
+	ui := JournalUI{entryList: list.New(items, list.NewDefaultDelegate(), 0, 0),
+		input: input,
+		jr:    jr,
 	}
 
 	ui.entryList.Title = "Journal Entries"
@@ -89,7 +78,6 @@ func (ui JournalUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		items := entriesToItems(entries)
 		ui.entryList.SetItems(items)
-		ui.mode = nav
 	case errMsg:
 		log.Printf("ERROR: %s\n", msg.Error())
 	case tea.KeyMsg:
@@ -97,17 +85,14 @@ func (ui JournalUI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			switch {
 			case key.Matches(msg, Keymap.Back):
 				ui.input.SetValue("")
-				ui.mode = nav
 				ui.input.Blur()
 			case key.Matches(msg, Keymap.Enter):
 				if strings.ToLower(ui.input.Value()) == "delete" {
 					cmds = append(cmds, deleteEntryCmd(ui.getActiveEntryID(), ui.jr))
 					ui.input.SetValue("")
-					ui.mode = nav
 					ui.input.Blur()
 				} else {
 					ui.input.SetValue("")
-					ui.mode = nav
 					ui.input.Blur()
 				}
 			}
@@ -192,6 +177,6 @@ type entryItem struct {
 	UpdateTime time.Time
 }
 
-func (i entryItem) Title() string       { return i.CreateTime.Format(time.RFC822) }
+func (i entryItem) Title() string       { return i.CreateTime.Format(journalTimeLayout) }
 func (i entryItem) Description() string { return i.Content }
-func (i entryItem) FilterValue() string { return i.CreateTime.Format(time.RFC822) }
+func (i entryItem) FilterValue() string { return i.CreateTime.Format(journalTimeLayout) }

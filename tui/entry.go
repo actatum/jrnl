@@ -3,7 +3,6 @@ package tui
 import (
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/actatum/jrnl"
 	"github.com/charmbracelet/bubbles/key"
@@ -170,7 +169,7 @@ func (ui EntryUI) View() string {
 }
 
 func (ui EntryUI) headerView() string {
-	title := titleStyle.Render(ui.entry.CreateTime.Format(time.RFC822))
+	title := titleStyle.Render(ui.entry.CreateTime.Format(journalTimeLayout))
 	line := strings.Repeat("─", max(0, ui.viewport.Width-lipgloss.Width(title)))
 	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
 }
